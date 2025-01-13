@@ -9,4 +9,5 @@ node_modules
 /dist
 .cache*
 .tshy
+.tshy-build
 gravity-ui-gulp-utils-*

@@ -29,6 +29,7 @@
     "prettier": "prettier '**/*.{md,yaml,yml,json}'",
     "typecheck": "tsc --noEmit",
     "build": "tshy",
+    "test": "echo \"No tests\"",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
