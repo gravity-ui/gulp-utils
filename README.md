@@ -9,29 +9,34 @@ import {src, dest} from 'gulp';
 import {createTypescriptProject, addVirtualFile} from '@gravity-ui/gulp-utils';
 
 async function compile() {
-    const tsProject = await createTypescriptProject({
-        projectPath: 'path/to/project', // default, process.cwd
-        configName: 'tsconfig.build.json', // default, tsconfig.json
-        compilerOptions: { // allows rewrite compiler options from tsconfig.json, default {}
-            declaration: true,
-        },
-        ts: await import('my-typescript-package'), // default, 'typescript'
-    });
+  const tsProject = await createTypescriptProject({
+    projectPath: 'path/to/project', // default, process.cwd
+    configName: 'tsconfig.build.json', // default, tsconfig.json
+    compilerOptions: {
+      // allows rewrite compiler options from tsconfig.json, default {}
+      declaration: true,
+    },
+    ts: await import('my-typescript-package'), // default, 'typescript'
+  });
 
-    return new Promise((resolve) => {
-        src('src/**/*.ts')
-            .pipe(tsProject({
-                customTransformers: {
-                    before: [...Object.values(tsProject.customTransformers)],
-                    afterDeclarations: [...Object.values(tsProject.customTransformers)],
-                }
-            }))
-            .pipe(addVirtualFile({
-                fileName: 'package.json',
-                text: JSON.stringify({type: 'commonjs'}),
-            }))
-            .pipe(dest('build'))
-            .on('end', resolve);
-    });
+  return new Promise((resolve) => {
+    src('src/**/*.ts')
+      .pipe(
+        tsProject({
+          customTransformers: {
+            before: [...Object.values(tsProject.customTransformers)],
+            afterDeclarations: [...Object.values(tsProject.customTransformers)],
+          },
+        }),
+      )
+      .pipe(
+        addVirtualFile({
+          fileName: 'package.json',
+          text: JSON.stringify({type: 'commonjs'}),
+        }),
+      )
+      .pipe(dest('build'))
+      .on('end', resolve);
+  });
 }
 ```
