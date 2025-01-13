@@ -1,4 +1,4 @@
-# gulp-utils &middot; [![npm package](https://img.shields.io/npm/v/@gravity-ui/gulp-utils)](https://www.npmjs.com/package/@gravity-ui/gulp-utils) [![CI](https://img.shields.io/github/actions/workflow/status/gravity-ui/gulp-utils/.github/workflows/ci.yml?label=CI&logo=github)](https://github.com/gravity-ui/gulp-utils/actions/workflows/ci.yml?query=branch:main) [![storybook](https://img.shields.io/badge/Storybook-deployed-ff4685)](https://preview.gravity-ui.com/gulp-utils/)
+# gulp-utils &middot; [![npm package](https://img.shields.io/npm/v/@gravity-ui/gulp-utils)](https://www.npmjs.com/package/@gravity-ui/gulp-utils) [![CI](https://img.shields.io/github/actions/workflow/status/gravity-ui/gulp-utils/.github/workflows/ci.yml?label=CI&logo=github)](https://github.com/gravity-ui/gulp-utils/actions/workflows/ci.yml?query=branch:main)
 
 Gulp utils for handling typescript compilation workflow.
 
