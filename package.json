@@ -1,0 +1,81 @@
+{
+  "name": "@gravity-ui/gulp-utils",
+  "version": "1.0.0",
+  "description": "Utils for gulp",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/commonjs/index.js",
+  "types": "./dist/commonjs/index.d.ts",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/commonjs/index.d.ts",
+        "default": "./dist/commonjs/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm run lint:js && npm run lint:other && npm run lint:exports",
+    "lint:js": "eslint --report-unused-disable-directives --ext .ts,.js .",
+    "lint:other": "npm run prettier -- --check",
+    "lint:exports": "npm run build && npm pack && attw gravity-ui-gulp-utils-${npm_package_version}.tgz",
+    "prettier": "prettier '**/*.{md,yaml,yml,json}'",
+    "typecheck": "tsc --noEmit",
+    "build": "tshy",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "gulpplugin",
+    "typescript"
+  ],
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "plugin-error": "^2.0.1",
+    "through2": "^4.0.2",
+    "to-through": "^3.0.0",
+    "vinyl": "^3.0.0",
+    "vinyl-sourcemaps-apply": "^0.2.1"
+  },
+  "peerDependencies": {
+    "typescript": ">=5"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.17.3",
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@gravity-ui/eslint-config": "^3.3.0",
+    "@gravity-ui/prettier-config": "^1.1.0",
+    "@gravity-ui/tsconfig": "^1.0.0",
+    "@types/through2": "^2.0.41",
+    "@types/vinyl": "^2.0.12",
+    "eslint": "^8.57.1",
+    "husky": "^9.1.7",
+    "nano-staged": "^0.8.0",
+    "prettier": "^3.4.2",
+    "tshy": "^3.0.2",
+    "typescript": "^5.7.3"
+  },
+  "nano-staged": {
+    "*.{js,ts}": [
+      "eslint --fix --quiet --report-unused-disable-directives"
+    ],
+    "*.{md,yaml,yml,json}": [
+      "prettier --write"
+    ]
+  },
+  "tshy": {
+    "exports": {
+      "./package.json": "./package.json",
+      ".": "./src/index.ts"
+    }
+  }
+}

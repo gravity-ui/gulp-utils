@@ -1,0 +1,15 @@
+{
+    "extends": [
+        "@gravity-ui/eslint-config",
+        "@gravity-ui/eslint-config/server",
+        "@gravity-ui/eslint-config/prettier",
+        "@gravity-ui/eslint-config/import-order"
+    ],
+    "root": true,
+    "rules": {
+        "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+        "@typescript-eslint/prefer-ts-expect-error": "error",
+        "@typescript-eslint/consistent-type-imports": ["error", {"prefer":  "type-imports", "fixStyle": "separate-type-imports"}],
+        "complexity": "off"
+    }
+}

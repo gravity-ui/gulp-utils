@@ -1,0 +1,12 @@
+.idea
+.vscode
+.history
+.DS_Store
+*.log
+
+node_modules
+
+/dist
+.cache*
+.tshy
+gravity-ui-gulp-utils-*
