@@ -91,6 +91,11 @@ function resolveModule(
     sourceFileName: string,
     options: Typescript.CompilerOptions,
 ) {
+    // TODO: Think about how to detect problematic packages
+    if (module.startsWith('lodash/') && !module.endsWith('.js')) {
+        return `${module}.js`;
+    }
+
     if (!module.startsWith('.')) {
         return undefined;
     }
