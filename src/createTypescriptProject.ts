@@ -185,7 +185,9 @@ export async function createTypescriptProject(options: Options = {}) {
                     }
                 }
 
-                console.log(ts.formatDiagnosticsWithColorAndContext(allDiagnostics, host));
+                if (allDiagnostics.length > 0) {
+                    console.log(ts.formatDiagnosticsWithColorAndContext(allDiagnostics, host));
+                }
 
                 if (hasErrors(allDiagnostics)) {
                     throw new Error('Compilation failed');
