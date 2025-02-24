@@ -96,6 +96,10 @@ function resolveModule(
         return `${module}.js`;
     }
 
+    if (module.startsWith('swiper/react') && !module.endsWith('.js')) {
+        return `${module}.js`;
+    }
+
     if (!module.startsWith('.')) {
         return undefined;
     }
