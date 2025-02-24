@@ -1,3 +1,4 @@
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import PluginError from 'plugin-error';
@@ -96,7 +97,7 @@ export async function createTypescriptProject(options: Options = {}) {
                     rootNames: [...inputFiles.keys()],
                     options: {
                         ...tsParsedConfig.options,
-                        outDir: undefined,
+                        outDir: os.tmpdir(),
                         sourceMap: hasSourceMap,
                         inlineSourceMap: false,
                         inlineSources: false,
@@ -109,7 +110,7 @@ export async function createTypescriptProject(options: Options = {}) {
                     const output = new Map<string, OutputFile>();
                     const result = program.emit(
                         undefined,
-                        (fileName, text, _writeByteOrderMark, _onError, sourceFiles) => {
+                        (outputFileName, text, _writeByteOrderMark, _onError, sourceFiles) => {
                             if (!sourceFiles) {
                                 return;
                             }
@@ -130,6 +131,10 @@ export async function createTypescriptProject(options: Options = {}) {
                                 outputFile = {file};
                             }
 
+                            const fileName = path.resolve(
+                                path.dirname(originalName),
+                                path.basename(outputFileName),
+                            );
                             if (fileName.endsWith('d.ts')) {
                                 outputFile.dtsSource = {fileName, text};
                             } else if (fileName.endsWith('.d.ts.map')) {
@@ -164,7 +169,10 @@ export async function createTypescriptProject(options: Options = {}) {
                                     parsedMap.file = file.relative;
                                     const directory = path.dirname(file.path);
                                     parsedMap.sources = parsedMap.sources.map((name: string) => {
-                                        const absolute = path.resolve(directory, name);
+                                        const absolute = path.resolve(
+                                            directory,
+                                            path.basename(name),
+                                        );
                                         return path.relative(file.base, absolute);
                                     });
                                     applySourceMap(file, parsedMap);
