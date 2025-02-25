@@ -96,9 +96,6 @@ function resolveModule(
         return `${module}.js`;
     }
 
-    if (!module.startsWith('.')) {
-        return undefined;
-    }
     const resolve = ts.resolveModuleName(module, sourceFileName, options, ts.sys);
     if (resolve.resolvedModule && !resolve.resolvedModule.isExternalLibraryImport) {
         const relativePath = path.relative(
