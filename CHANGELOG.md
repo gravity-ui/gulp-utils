@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/gravity-ui/gulp-utils/compare/v1.0.2...v1.0.3) (2025-02-25)
+
+
+### Bug Fixes
+
+* **transformLocalImports:** transform all local imports ([#12](https://github.com/gravity-ui/gulp-utils/issues/12)) ([6cc07c8](https://github.com/gravity-ui/gulp-utils/commit/6cc07c84f006b1165724e8e383096a17accda3b8))
+
 ## [1.0.2](https://github.com/gravity-ui/gulp-utils/compare/v1.0.1...v1.0.2) (2025-02-24)
 
 
