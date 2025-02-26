@@ -13,6 +13,9 @@ export function transformScssImportsFactory(ts: typeof Typescript) {
                     ts.isStringLiteral(node.moduleSpecifier)
                 ) {
                     modulePath = node.moduleSpecifier.text;
+
+                    if (!modulePath.startsWith('.')) return node;
+
                     if (modulePath.endsWith('.scss')) {
                         const newNode = context.factory.updateImportDeclaration(
                             node,
@@ -32,6 +35,9 @@ export function transformScssImportsFactory(ts: typeof Typescript) {
                     ts.isStringLiteral(node.arguments[0])
                 ) {
                     modulePath = node.arguments[0].text;
+
+                    if (!modulePath.startsWith('.')) return node;
+
                     if (modulePath.endsWith('.scss')) {
                         const newStatement = context.factory.updateCallExpression(
                             node,
