@@ -24,8 +24,8 @@ export interface DocsSource {
 }
 
 export interface DocsConfig {
-    /** Repo root. */
-    rootDir: string;
+    /** Repo root. Defaults to `process.cwd()`. */
+    rootDir?: string;
     /** Directory to (re)generate. */
     outDir: string;
     /** Shown in the generated INDEX.md header. Defaults to `rootDir`'s package name. */
@@ -62,7 +62,10 @@ interface DocItem {
  * and an empty `docs/` are both harmless when a package lacks them, so the same
  * config drives every package (uikit, navigation, …).
  */
-export function standardDocsConfig(rootDir: string, packageName?: string): DocsConfig {
+export function standardDocsConfig(
+    rootDir: string = process.cwd(),
+    packageName?: string,
+): DocsConfig {
     return {
         rootDir,
         packageName: packageName ?? readPackageName(rootDir),
@@ -100,7 +103,8 @@ export function standardDocsConfig(rootDir: string, packageName?: string): DocsC
  * with {@link standardDocsConfig}.
  */
 export function buildDocs(config: DocsConfig): BuildDocsResult {
-    const {rootDir, outDir, sources} = config;
+    const {outDir, sources} = config;
+    const rootDir = config.rootDir ?? process.cwd();
     const packageName = config.packageName ?? readPackageName(rootDir);
 
     fs.rmSync(outDir, {recursive: true, force: true});
