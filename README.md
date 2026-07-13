@@ -55,15 +55,15 @@ pipeline — call it from a gulp task, an npm script, or a rollup hook.
 ```ts
 import {buildDocs, standardDocsConfig} from '@gravity-ui/gulp-utils';
 
-const {name} = require('./package.json');
-
 // standardDocsConfig covers the shared gravity-ui layout:
 //   docs/**/*.md            → build/docs/guides/
 //   src/components/*/README  → build/docs/components/   (legacy/ excluded)
 //   src/hooks/*/README       → build/docs/hooks/        (private/ excluded)
-buildDocs(standardDocsConfig(process.cwd(), name));
+buildDocs(standardDocsConfig(process.cwd()));
 ```
 
+The package name shown in the generated `INDEX.md` is read from the consumer's
+`package.json` by default; pass it explicitly as the second argument to override.
 Pass a custom `DocsConfig` to change the sources, output directory or INDEX
 section order. Intra-repo `README.md` links are rewritten to resolve inside the
 output; links to docs that aren't shipped are unwrapped to plain text.

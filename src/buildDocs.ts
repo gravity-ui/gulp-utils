@@ -28,8 +28,8 @@ export interface DocsConfig {
     rootDir: string;
     /** Directory to (re)generate. */
     outDir: string;
-    /** Shown in the generated INDEX.md header. */
-    packageName: string;
+    /** Shown in the generated INDEX.md header. Defaults to `rootDir`'s package name. */
+    packageName?: string;
     /** Doc sources; INDEX sections follow this order. */
     sources: DocsSource[];
 }
@@ -62,10 +62,10 @@ interface DocItem {
  * and an empty `docs/` are both harmless when a package lacks them, so the same
  * config drives every package (uikit, navigation, …).
  */
-export function standardDocsConfig(rootDir: string, packageName: string): DocsConfig {
+export function standardDocsConfig(rootDir: string, packageName?: string): DocsConfig {
     return {
         rootDir,
-        packageName,
+        packageName: packageName ?? readPackageName(rootDir),
         outDir: path.join(rootDir, 'build', 'docs'),
         sources: [
             {
@@ -100,7 +100,8 @@ export function standardDocsConfig(rootDir: string, packageName: string): DocsCo
  * with {@link standardDocsConfig}.
  */
 export function buildDocs(config: DocsConfig): BuildDocsResult {
-    const {rootDir, outDir, packageName, sources} = config;
+    const {rootDir, outDir, sources} = config;
+    const packageName = config.packageName ?? readPackageName(rootDir);
 
     fs.rmSync(outDir, {recursive: true, force: true});
 
@@ -173,6 +174,13 @@ function findMarkdown(dir: string): string[] {
         }
     }
     return result;
+}
+
+function readPackageName(rootDir: string): string {
+    const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8')) as {
+        name?: string;
+    };
+    return pkg.name ?? '';
 }
 
 function writeDoc(outPath: string, content: string): void {
