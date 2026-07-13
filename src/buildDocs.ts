@@ -116,15 +116,24 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
     fs.rmSync(outDir, {recursive: true, force: true});
 
     // Resolve every source's items first, so links between docs can be rewritten
-    // in the second pass regardless of processing order.
+    // in the second pass regardless of processing order. README docs are also
+    // keyed by their folder, so bare-folder links (`../Portal`) resolve too.
     const listed = sources.map((source) => ({source, items: listSource(rootDir, source)}));
-    const docMap = new Map(listed.flatMap(({items}) => items.map((it) => [it.source, it.outRel])));
+    const docMap = new Map<string, string>();
+    for (const {source, items} of listed) {
+        for (const item of items) {
+            docMap.set(item.source, item.outRel);
+            if (source.kind === 'readme') {
+                docMap.set(path.dirname(item.source), item.outRel);
+            }
+        }
+    }
 
     const sections: DocsSection[] = [];
     for (const {source, items} of listed) {
         const entries: DocsIndexEntry[] = [];
         for (const {source: file, name, outRel} of items) {
-            const cleaned = rewriteReadmeLinks(
+            const cleaned = rewriteDocLinks(
                 cleanMarkdown(fs.readFileSync(file, 'utf8')),
                 file,
                 outRel,
@@ -204,10 +213,18 @@ function writeDoc(outPath: string, content: string): void {
 function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSource): DocItem[] {
     const absBase = path.join(rootDir, baseDir);
     if (kind === 'readme') {
-        return findReadmes(absBase, exclude).map((source) => {
-            const name = path.relative(absBase, path.dirname(source)).split(path.sep).join('/');
-            return {source, name, outRel: path.posix.join(outPrefix, `${name}.md`)};
-        });
+        return (
+            findReadmes(absBase, exclude)
+                .map((source) => {
+                    const name = path
+                        .relative(absBase, path.dirname(source))
+                        .split(path.sep)
+                        .join('/');
+                    return {source, name, outRel: path.posix.join(outPrefix, `${name}.md`)};
+                })
+                // Skip a README sitting directly at baseDir (empty name → blank entry).
+                .filter((item) => item.name !== '')
+        );
     }
     return findMarkdown(absBase).map((source) => {
         const rel = path.relative(absBase, source).split(path.sep).join('/');
@@ -215,33 +232,32 @@ function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSo
     });
 }
 
-// Rewrites intra-repo README.md links so they resolve inside the docs output.
-// Source links point at sibling source folders (../CopyToClipboard/README.md);
-// here every README maps to a flat <name>.md, so links are recomputed relative
-// to the current output file. Links to docs that aren't shipped (e.g. legacy/)
-// are unwrapped to plain text so no dead link remains. External URLs are kept.
-function rewriteReadmeLinks(
+// Rewrites repo-relative links so they resolve inside the docs output. A link to
+// another shipped doc — by README path (../Popup/README.md) or by its folder
+// (../Popup) — is recomputed relative to the current output file. Any other
+// repo-relative link (a source file, an unshipped doc like legacy/) is unwrapped
+// to plain text so no dead link remains. External URLs (http:, mailto:, …) and
+// in-page anchors are left untouched.
+function rewriteDocLinks(
     markdown: string,
     source: string,
     outRel: string,
     docMap: Map<string, string>,
 ): string {
     return markdown.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (whole, text: string, target: string) => {
-        if (!/readme\.md/i.test(target)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) {
             return whole;
-        }
-        if (/^[a-z]+:\/\//i.test(target)) {
-            return whole; // external URL — leave as-is
         }
 
         const hashIndex = target.indexOf('#');
         const relPath = hashIndex === -1 ? target : target.slice(0, hashIndex);
         const anchor = hashIndex === -1 ? '' : target.slice(hashIndex);
 
+        // Resolve either a direct doc path or a bare folder to its shipped output.
         const absTarget = path.resolve(path.dirname(source), relPath);
         const targetOut = docMap.get(absTarget);
         if (!targetOut) {
-            return text; // target not shipped — drop the link, keep its text
+            return text; // not a shipped doc — drop the link, keep its text
         }
 
         let relOut = path.posix.relative(path.posix.dirname(outRel), targetOut);
