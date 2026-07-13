@@ -1,6 +1,6 @@
 {
   "name": "@gravity-ui/gulp-utils",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Utils for gulp",
   "license": "MIT",
   "type": "module",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/gravity-ui/gulp-utils/compare/v1.0.3...v1.1.0) (2026-07-13)
+
+
+### Features
+
+* add buildDocs for shipping package docs to AI agents ([#14](https://github.com/gravity-ui/gulp-utils/issues/14)) ([97e6398](https://github.com/gravity-ui/gulp-utils/commit/97e63982efb5f34fcd1f4b736e2b2a34bf130325))
+
 ## [1.0.3](https://github.com/gravity-ui/gulp-utils/compare/v1.0.2...v1.0.3) (2025-02-25)
 
 
