@@ -56,10 +56,16 @@ interface DocItem {
     outRel: string;
 }
 
-// The layout shared by gravity-ui packages: component and hook READMEs plus any
-// markdown dropped under the repo-level docs/ folder. `exclude: ['legacy']` and
-// an empty docs/ are both harmless when a package lacks them, so the same config
-// drives every package (uikit, navigation, …).
+/**
+ * Builds the config for the layout shared by gravity-ui packages: component and
+ * hook READMEs plus any markdown under the repo-level docs/ folder. `legacy/` and
+ * an empty docs/ are both harmless when a package lacks them, so the same config
+ * drives every package (uikit, navigation, …).
+ *
+ * @param rootDir repo root; defaults to `process.cwd()`.
+ * @param packageName INDEX.md header name; defaults to `rootDir`'s package name.
+ * @returns the docs config to pass to {@link buildDocs}.
+ */
 export function createDefaultDocsConfig(
     rootDir: string = process.cwd(),
     packageName?: string,
@@ -94,10 +100,14 @@ export function createDefaultDocsConfig(
     };
 }
 
-// Builds a package's docs output for AI agents from its markdown sources.
-// The output ships inside the npm tarball so an agent working in a consumer
-// project reads documentation matching the installed version. Usually called
-// with createDefaultDocsConfig().
+/**
+ * Builds a package's docs output for AI agents from its markdown sources. The
+ * output ships inside the npm tarball so an agent working in a consumer project
+ * reads documentation matching the installed version.
+ *
+ * @param config docs config; defaults to {@link createDefaultDocsConfig}().
+ * @returns the generated sections and the total document count.
+ */
 export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): BuildDocsResult {
     const {outDir, sources} = config;
     const rootDir = config.rootDir ?? process.cwd();
