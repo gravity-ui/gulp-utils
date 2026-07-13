@@ -56,12 +56,10 @@ interface DocItem {
     outRel: string;
 }
 
-/**
- * The layout shared by gravity-ui packages: component and hook READMEs plus any
- * markdown dropped under the repo-level `docs/` folder. `exclude: ['legacy']`
- * and an empty `docs/` are both harmless when a package lacks them, so the same
- * config drives every package (uikit, navigation, …).
- */
+// The layout shared by gravity-ui packages: component and hook READMEs plus any
+// markdown dropped under the repo-level docs/ folder. `exclude: ['legacy']` and
+// an empty docs/ are both harmless when a package lacks them, so the same config
+// drives every package (uikit, navigation, …).
 export function createDefaultDocsConfig(
     rootDir: string = process.cwd(),
     packageName?: string,
@@ -96,12 +94,10 @@ export function createDefaultDocsConfig(
     };
 }
 
-/**
- * Builds a package's docs output for AI agents from its markdown sources.
- * The output ships inside the npm tarball so an agent working in a consumer
- * project reads documentation matching the installed version. Usually called
- * with {@link createDefaultDocsConfig}.
- */
+// Builds a package's docs output for AI agents from its markdown sources.
+// The output ships inside the npm tarball so an agent working in a consumer
+// project reads documentation matching the installed version. Usually called
+// with createDefaultDocsConfig().
 export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): BuildDocsResult {
     const {outDir, sources} = config;
     const rootDir = config.rootDir ?? process.cwd();
@@ -141,7 +137,7 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
     return {sections, total};
 }
 
-/** Recursively collects `README.md` files under `dir`, skipping excluded segments. */
+// Recursively collects README.md files under `dir`, skipping excluded segments.
 function findReadmes(dir: string, exclude: string[] = []): string[] {
     if (!fs.existsSync(dir)) {
         return [];
@@ -163,7 +159,7 @@ function findReadmes(dir: string, exclude: string[] = []): string[] {
     return result;
 }
 
-/** Recursively collects `*.md` files under `dir`. */
+// Recursively collects *.md files under `dir`.
 function findMarkdown(dir: string): string[] {
     if (!fs.existsSync(dir)) {
         return [];
@@ -192,11 +188,9 @@ function writeDoc(outPath: string, content: string): void {
     fs.writeFileSync(outPath, content);
 }
 
-/**
- * Lists a source's docs as items, mirroring the source folder layout so nested
- * groups never collide (e.g. `src/components/controls/TextInput/README.md` →
- * `components/controls/TextInput.md`, `docs/theming.md` → `guides/theming.md`).
- */
+// Lists a source's docs as items, mirroring the source folder layout so nested
+// groups never collide (e.g. src/components/controls/TextInput/README.md →
+// components/controls/TextInput.md, docs/theming.md → guides/theming.md).
 function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSource): DocItem[] {
     const absBase = path.join(rootDir, baseDir);
     if (kind === 'readme') {
@@ -211,13 +205,11 @@ function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSo
     });
 }
 
-/**
- * Rewrites intra-repo `README.md` links so they resolve inside the docs output.
- * Source links point at sibling source folders (`../CopyToClipboard/README.md`);
- * here every README maps to a flat `<name>.md`, so links are recomputed relative
- * to the current output file. Links to docs that aren't shipped (e.g. `legacy/`)
- * are unwrapped to plain text so no dead link remains. External URLs are kept.
- */
+// Rewrites intra-repo README.md links so they resolve inside the docs output.
+// Source links point at sibling source folders (../CopyToClipboard/README.md);
+// here every README maps to a flat <name>.md, so links are recomputed relative
+// to the current output file. Links to docs that aren't shipped (e.g. legacy/)
+// are unwrapped to plain text so no dead link remains. External URLs are kept.
 function rewriteReadmeLinks(
     markdown: string,
     source: string,

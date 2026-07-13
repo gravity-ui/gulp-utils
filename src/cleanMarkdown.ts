@@ -1,17 +1,15 @@
-/**
- * Prepares a source README for shipping inside the npm tarball (e.g. `build/docs/`),
- * where it is consumed by AI agents rather than rendered on GitHub or Storybook.
- *
- * gravity-ui docs sources use a few service markers:
- *   - `<!--SANDBOX ... SANDBOX-->`               commented-out interactive Storybook code
- *   - `<!--LANDING_BLOCK ... LANDING_BLOCK-->`    commented-out content for the landing site
- *   - `<!--GITHUB_BLOCK-->` / `<!--/GITHUB_BLOCK-->`   wrappers around GitHub-only content
- *
- * SANDBOX/LANDING blocks are commented out (their code duplicates the plain
- * fenced example shown right after), so they are dropped entirely. GITHUB_BLOCK
- * markers wrap real content we want to keep — only the marker lines are removed.
- * Badges and images carry no value for an agent and are stripped too.
- */
+// Prepares a source README for shipping inside the npm tarball (e.g. build/docs/),
+// where it is consumed by AI agents rather than rendered on GitHub or Storybook.
+//
+// gravity-ui docs sources use a few service markers:
+//   - <!--SANDBOX ... SANDBOX-->                    commented-out interactive Storybook code
+//   - <!--LANDING_BLOCK ... LANDING_BLOCK-->         commented-out content for the landing site
+//   - <!--GITHUB_BLOCK--> / <!--/GITHUB_BLOCK-->     wrappers around GitHub-only content
+//
+// SANDBOX/LANDING blocks are commented out (their code duplicates the plain
+// fenced example shown right after), so they are dropped entirely. GITHUB_BLOCK
+// markers wrap real content we want to keep — only the marker lines are removed.
+// Badges and images carry no value for an agent and are stripped too.
 export function cleanMarkdown(content: string): string {
     let text = content.replace(/\r\n/g, '\n');
 
@@ -39,13 +37,11 @@ export function cleanMarkdown(content: string): string {
     return `${text.trim()}\n`;
 }
 
-/**
- * Extracts a one-line summary for the docs index. By convention a README opens
- * with the title, the import example, then a description line — so the summary
- * is the first prose line after the title, skipping the leading code block.
- * If a section heading follows the title directly (the file doesn't yet follow
- * the convention), there is no intro paragraph and the summary is empty.
- */
+// Extracts a one-line summary for the docs index. By convention a README opens
+// with the title, the import example, then a description line — so the summary
+// is the first prose line after the title, skipping the leading code block.
+// If a section heading follows the title directly (the file doesn't yet follow
+// the convention), there is no intro paragraph and the summary is empty.
 export function extractSummary(cleanedMarkdown: string, maxLength = 300): string {
     const lines = cleanedMarkdown.split('\n');
 
@@ -82,7 +78,7 @@ export function extractSummary(cleanedMarkdown: string, maxLength = 300): string
     return '';
 }
 
-/** Returns the text of the first heading, or '' if there is none. */
+// Returns the text of the first heading, or '' if there is none.
 export function extractTitle(cleanedMarkdown: string): string {
     for (const line of cleanedMarkdown.split('\n')) {
         const match = line.trim().match(/^#{1,6}\s+(.+)$/);
