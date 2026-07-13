@@ -62,7 +62,7 @@ interface DocItem {
  * and an empty `docs/` are both harmless when a package lacks them, so the same
  * config drives every package (uikit, navigation, …).
  */
-export function standardDocsConfig(
+export function createDefaultDocsConfig(
     rootDir: string = process.cwd(),
     packageName?: string,
 ): DocsConfig {
@@ -100,9 +100,9 @@ export function standardDocsConfig(
  * Builds a package's docs output for AI agents from its markdown sources.
  * The output ships inside the npm tarball so an agent working in a consumer
  * project reads documentation matching the installed version. Usually called
- * with {@link standardDocsConfig}.
+ * with {@link createDefaultDocsConfig}.
  */
-export function buildDocs(config: DocsConfig): BuildDocsResult {
+export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): BuildDocsResult {
     const {outDir, sources} = config;
     const rootDir = config.rootDir ?? process.cwd();
     const packageName = config.packageName ?? readPackageName(rootDir);

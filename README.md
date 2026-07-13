@@ -53,18 +53,19 @@ the installed version, discoverable via a generated `INDEX.md`.
 pipeline — call it from a gulp task, an npm script, or a rollup hook.
 
 ```ts
-import {buildDocs, standardDocsConfig} from '@gravity-ui/gulp-utils';
+import {buildDocs, createDefaultDocsConfig} from '@gravity-ui/gulp-utils';
 
-// standardDocsConfig covers the shared gravity-ui layout:
+// buildDocs() with no config uses createDefaultDocsConfig(), the shared
+// gravity-ui layout:
 //   docs/**/*.md            → build/docs/guides/
 //   src/components/*/README  → build/docs/components/   (legacy/ excluded)
 //   src/hooks/*/README       → build/docs/hooks/        (private/ excluded)
-buildDocs(standardDocsConfig());
+buildDocs();
 ```
 
 `rootDir` defaults to `process.cwd()`, and the package name shown in the
 generated `INDEX.md` is read from that `package.json` — pass them explicitly
-(`standardDocsConfig(rootDir, packageName)`) to override.
+(`createDefaultDocsConfig(rootDir, packageName)`) to override.
 Pass a custom `DocsConfig` to change the sources, output directory or INDEX
 section order. Intra-repo `README.md` links are rewritten to resolve inside the
 output; links to docs that aren't shipped are unwrapped to plain text.

@@ -1,6 +1,6 @@
 export {addVirtualFile} from './addVirtualFile.js';
 export {createTypescriptProject} from './createTypescriptProject.js';
-export {buildDocs, standardDocsConfig} from './buildDocs.js';
+export {buildDocs, createDefaultDocsConfig} from './buildDocs.js';
 export type {
     DocsConfig,
     DocsSource,
