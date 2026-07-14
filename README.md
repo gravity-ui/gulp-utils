@@ -2,6 +2,12 @@
 
 Gulp utils for handling typescript compilation workflow.
 
+## Install
+
+```shell
+npm install --save-dev @gravity-ui/gulp-utils
+```
+
 ## Usage
 
 ```ts
@@ -69,3 +75,29 @@ generated `INDEX.md` is read from that `package.json` — pass them explicitly
 Pass a custom `DocsConfig` to change the sources, output directory or INDEX
 section order. Intra-repo `README.md` links are rewritten to resolve inside the
 output; links to docs that aren't shipped are unwrapped to plain text.
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## For AI agents
+
+Build-time gulp utilities for `@gravity-ui` packages — reach for it to compile TypeScript with custom transformers and to ship a docs tree inside an npm tarball that AI agents can read at the installed version.
+
+### When to use
+
+- Compiling a package's TypeScript with `createTypescriptProject`, including custom transformers applied to both emit and declaration files.
+- Injecting virtual files into the gulp stream (e.g. a generated `package.json`) with `addVirtualFile`.
+- Generating an `INDEX`-ed documentation tree for AI agents from a package's component/hook READMEs and `docs/` markdown via `buildDocs`.
+
+### When not to use
+
+- Plain application code at runtime — this is a build-time tool, not something consumers import into shipped apps.
+- Hand-rolling a TypeScript build without gulp — `createTypescriptProject` is a gulp plugin factory; for non-gulp pipelines use the `typescript` package directly.
+
+### Common pitfalls
+
+- **`createTypescriptProject` is async.** `await` it before calling the returned `tsProject()` in the pipe — the factory reads the `tsconfig` and resolves the `ts` module lazily.
+- **Custom transformers go in two places.** Pass them under `customTransformers.before` for emit and `customTransformers.afterDeclarations` for `.d.ts` files; a transformer only in `before` won't touch the declarations.
+- **`buildDocs` is a function, not a gulp plugin.** Call it directly from a gulp task, npm script, or rollup hook; do not `.pipe()` into it.
+- **`buildDocs` reads `package.json` from `rootDir` (default `process.cwd()`).** Pass `createDefaultDocsConfig(rootDir, packageName)` explicitly when the package name or location is not what `cwd` resolves to.
