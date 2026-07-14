@@ -69,3 +69,7 @@ generated `INDEX.md` is read from that `package.json` — pass them explicitly
 Pass a custom `DocsConfig` to change the sources, output directory or INDEX
 section order. Intra-repo `README.md` links are rewritten to resolve inside the
 output; links to docs that aren't shipped are unwrapped to plain text.
+
+The package README's `For AI agents` section, when present, is cleaned and placed
+at the top of the generated `INDEX.md`. A `Documentation for AI agents` pointer
+section is also appended once to that README, linking to the generated tree.

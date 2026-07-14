@@ -1,10 +1,15 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import {cleanMarkdown, extractSummary, extractTitle} from './cleanMarkdown.js';
+import {cleanMarkdown, extractSection, extractSummary, extractTitle} from './cleanMarkdown.js';
 
 // Story/test folders hold Storybook doc pages and fixtures, not API docs.
 const DEFAULT_EXCLUDE = ['__stories__', '__tests__', '__mocks__', '__snapshots__'];
+
+// Heading in the package README whose content is surfaced at the top of INDEX.md.
+const README_AI_SECTION = 'For AI agents';
+// Heading of the pointer section buildDocs keeps in the package README.
+const README_DOCS_POINTER = 'Documentation for AI agents';
 
 export type DocsSourceKind = 'readme' | 'markdown';
 
@@ -105,6 +110,10 @@ export function createDefaultDocsConfig(
  * output ships inside the npm tarball so an agent working in a consumer project
  * reads documentation matching the installed version.
  *
+ * The package README's `For AI agents` section (if present) is cleaned and placed
+ * at the top of the generated `INDEX.md`, and a `Documentation for AI agents`
+ * pointer section is appended to that README (once) linking to the generated tree.
+ *
  * @param config docs config; defaults to {@link createDefaultDocsConfig}().
  * @returns the generated sections and the total document count.
  */
@@ -150,7 +159,13 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
     }
 
     const outRelToRoot = path.relative(rootDir, outDir).split(path.sep).join('/');
-    writeDoc(path.join(outDir, 'INDEX.md'), renderIndex(packageName, outRelToRoot, sections));
+    const readmePath = path.join(rootDir, 'README.md');
+    const aiSection = readAiSection(readmePath);
+    writeDoc(
+        path.join(outDir, 'INDEX.md'),
+        renderIndex(packageName, outRelToRoot, sections, aiSection),
+    );
+    ensureReadmePointer(readmePath, path.posix.join(outRelToRoot, 'INDEX.md'));
 
     const total = sections.reduce((sum, section) => sum + section.entries.length, 0);
     return {sections, total};
@@ -280,7 +295,12 @@ function renderSection(title: string, entries: DocsIndexEntry[]): string {
     return `## ${title}\n\n${rows}\n`;
 }
 
-function renderIndex(packageName: string, outRelToRoot: string, sections: DocsSection[]): string {
+function renderIndex(
+    packageName: string,
+    outRelToRoot: string,
+    sections: DocsSection[],
+    aiSection: string,
+): string {
     // e.g. node_modules/@gravity-ui/uikit/build/docs
     const installedPath = path.posix.join('node_modules', packageName, outRelToRoot);
     const header = [
@@ -293,7 +313,39 @@ function renderIndex(packageName: string, outRelToRoot: string, sections: DocsSe
         '',
     ].join('\n');
 
-    return [header, ...sections.map(({title, entries}) => renderSection(title, entries))]
+    return [header, aiSection, ...sections.map(({title, entries}) => renderSection(title, entries))]
         .filter(Boolean)
         .join('\n');
+}
+
+// Reads and cleans the README's "For AI agents" section so it can lead the INDEX.
+// Empty string when the README (or the section) is absent — the INDEX just omits it.
+function readAiSection(readmePath: string): string {
+    if (!fs.existsSync(readmePath)) {
+        return '';
+    }
+    const section = extractSection(fs.readFileSync(readmePath, 'utf8'), README_AI_SECTION);
+    // Keep cleanMarkdown's trailing newline so the INDEX join leaves a blank line
+    // before the first doc section.
+    return section ? cleanMarkdown(section) : '';
+}
+
+// Appends a pointer section to the package README so a human (or agent) browsing
+// the repo finds the generated docs tree. Idempotent: re-running buildDocs never
+// duplicates it, and the distinct heading keeps it out of {@link readAiSection}.
+function ensureReadmePointer(readmePath: string, indexRel: string): void {
+    if (!fs.existsSync(readmePath)) {
+        return;
+    }
+    const content = fs.readFileSync(readmePath, 'utf8');
+    if (extractSection(content, README_DOCS_POINTER)) {
+        return;
+    }
+    const section = [
+        `## ${README_DOCS_POINTER}`,
+        '',
+        `Agent-readable documentation for the installed version is generated to \`${indexRel}\` — start from that \`INDEX.md\`.`,
+        '',
+    ].join('\n');
+    fs.writeFileSync(readmePath, `${content.replace(/\s+$/, '')}\n\n${section}`);
 }
