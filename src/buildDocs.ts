@@ -3,7 +3,7 @@ import * as path from 'node:path';
 
 import {parseComponentReadme, parsePackageReadme} from '@gravity-ui/readme-validator';
 
-import {cleanMarkdown, extractSection} from './cleanMarkdown.js';
+import {cleanMarkdown} from './cleanMarkdown.js';
 
 // Story/test folders hold Storybook doc pages and fixtures, not API docs.
 const DEFAULT_EXCLUDE = ['__stories__', '__tests__', '__mocks__', '__snapshots__'];
@@ -13,8 +13,6 @@ const DEFAULT_EXCLUDE = ['__stories__', '__tests__', '__mocks__', '__snapshots__
 const README_AI_SECTION = 'For AI agents';
 const README_INSTALL_SECTION = 'Install';
 const README_USAGE_SECTION = 'Usage';
-// Heading of the pointer section buildDocs keeps in the package README.
-const README_DOCS_POINTER = 'Documentation for AI agents';
 
 export type DocsSourceKind = 'readme' | 'markdown';
 
@@ -169,7 +167,6 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
         path.join(outDir, 'INDEX.md'),
         renderIndex(packageName, outRelToRoot, sections, overview),
     );
-    ensureReadmePointer(readmePath, path.posix.join(outRelToRoot, 'INDEX.md'));
 
     const total = sections.reduce((sum, section) => sum + section.entries.length, 0);
     return {sections, total};
@@ -365,24 +362,4 @@ function readPackageOverview(readmePath: string): string {
 // single INDEX.md list line.
 function collapseWhitespace(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
-}
-
-// Appends a pointer section to the package README so a human (or agent) browsing
-// the repo finds the generated docs tree. Idempotent: re-running buildDocs never
-// duplicates it, and the distinct heading keeps it out of {@link readPackageOverview}.
-function ensureReadmePointer(readmePath: string, indexRel: string): void {
-    if (!fs.existsSync(readmePath)) {
-        return;
-    }
-    const content = fs.readFileSync(readmePath, 'utf8');
-    if (extractSection(content, README_DOCS_POINTER)) {
-        return;
-    }
-    const section = [
-        `## ${README_DOCS_POINTER}`,
-        '',
-        `Agent-readable documentation for the installed version is generated to \`${indexRel}\` — start from that \`INDEX.md\`.`,
-        '',
-    ].join('\n');
-    fs.writeFileSync(readmePath, `${content.replace(/\s+$/, '')}\n\n${section}`);
 }
