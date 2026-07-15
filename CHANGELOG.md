@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/gravity-ui/gulp-utils/compare/v1.1.0...v1.1.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* resolve more intra-repo doc links and add tests ([#16](https://github.com/gravity-ui/gulp-utils/issues/16)) ([ac4d753](https://github.com/gravity-ui/gulp-utils/commit/ac4d753155d3db11a7f867599bac835a06258e50))
+
 ## [1.1.0](https://github.com/gravity-ui/gulp-utils/compare/v1.0.3...v1.1.0) (2026-07-13)
 
 
