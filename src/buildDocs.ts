@@ -1,10 +1,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import {cleanMarkdown, extractSummary, extractTitle} from './cleanMarkdown.js';
+import {parseComponentReadme, parsePackageReadme} from '@gravity-ui/readme-validator';
+
+import {cleanMarkdown} from './cleanMarkdown.js';
 
 // Story/test folders hold Storybook doc pages and fixtures, not API docs.
 const DEFAULT_EXCLUDE = ['__stories__', '__tests__', '__mocks__', '__snapshots__'];
+
+// Headings under which the package README's parsed sections are surfaced at the
+// top of INDEX.md (canonical labels; readme-validator matches heading aliases).
+const README_AI_SECTION = 'For AI agents';
+const README_INSTALL_SECTION = 'Install';
+const README_USAGE_SECTION = 'Usage';
 
 export type DocsSourceKind = 'readme' | 'markdown';
 
@@ -105,6 +113,10 @@ export function createDefaultDocsConfig(
  * output ships inside the npm tarball so an agent working in a consumer project
  * reads documentation matching the installed version.
  *
+ * The package README's `For AI agents` section (if present) is cleaned and placed
+ * at the top of the generated `INDEX.md`, and a `Documentation for AI agents`
+ * pointer section is appended to that README (once) linking to the generated tree.
+ *
  * @param config docs config; defaults to {@link createDefaultDocsConfig}().
  * @returns the generated sections and the total document count.
  */
@@ -116,32 +128,48 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
     fs.rmSync(outDir, {recursive: true, force: true});
 
     // Resolve every source's items first, so links between docs can be rewritten
-    // in the second pass regardless of processing order.
+    // in the second pass regardless of processing order. README docs are also
+    // keyed by their folder, so bare-folder links (`../Portal`) resolve too.
     const listed = sources.map((source) => ({source, items: listSource(rootDir, source)}));
-    const docMap = new Map(listed.flatMap(({items}) => items.map((it) => [it.source, it.outRel])));
+    const docMap = new Map<string, string>();
+    for (const {source, items} of listed) {
+        for (const item of items) {
+            docMap.set(item.source, item.outRel);
+            if (source.kind === 'readme') {
+                docMap.set(path.dirname(item.source), item.outRel);
+            }
+        }
+    }
 
     const sections: DocsSection[] = [];
     for (const {source, items} of listed) {
         const entries: DocsIndexEntry[] = [];
         for (const {source: file, name, outRel} of items) {
-            const cleaned = rewriteReadmeLinks(
-                cleanMarkdown(fs.readFileSync(file, 'utf8')),
-                file,
-                outRel,
-                docMap,
-            );
+            // Title/summary come from readme-validator's AST parse of the source;
+            // the shipped doc body is the same source run through cleanMarkdown.
+            const raw = fs.readFileSync(file, 'utf8');
+            const parsed = parseComponentReadme(raw);
+            const cleaned = rewriteDocLinks(cleanMarkdown(raw), file, outRel, docMap);
             writeDoc(path.join(outDir, outRel), cleaned);
             entries.push({
-                name: source.nameFromTitle ? extractTitle(cleaned) || name : name,
+                name: source.nameFromTitle ? parsed.title || name : name,
                 rel: outRel,
-                summary: extractSummary(cleaned),
+                summary: collapseWhitespace(parsed.description ?? ''),
             });
         }
         sections.push({title: source.title, entries});
     }
 
     const outRelToRoot = path.relative(rootDir, outDir).split(path.sep).join('/');
-    writeDoc(path.join(outDir, 'INDEX.md'), renderIndex(packageName, outRelToRoot, sections));
+    const readmePath = path.join(rootDir, 'README.md');
+    // Rewrite the overview's links too: README prose (Useful docs, Usage, …)
+    // references docs by their repo path, but they were copied/flattened into
+    // outDir. INDEX.md sits at the outDir root, so outRel is empty.
+    const overview = rewriteDocLinks(readPackageOverview(readmePath), readmePath, '', docMap);
+    writeDoc(
+        path.join(outDir, 'INDEX.md'),
+        renderIndex(packageName, outRelToRoot, sections, overview),
+    );
 
     const total = sections.reduce((sum, section) => sum + section.entries.length, 0);
     return {sections, total};
@@ -204,10 +232,18 @@ function writeDoc(outPath: string, content: string): void {
 function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSource): DocItem[] {
     const absBase = path.join(rootDir, baseDir);
     if (kind === 'readme') {
-        return findReadmes(absBase, exclude).map((source) => {
-            const name = path.relative(absBase, path.dirname(source)).split(path.sep).join('/');
-            return {source, name, outRel: path.posix.join(outPrefix, `${name}.md`)};
-        });
+        return (
+            findReadmes(absBase, exclude)
+                .map((source) => {
+                    const name = path
+                        .relative(absBase, path.dirname(source))
+                        .split(path.sep)
+                        .join('/');
+                    return {source, name, outRel: path.posix.join(outPrefix, `${name}.md`)};
+                })
+                // Skip a README sitting directly at baseDir (empty name → blank entry).
+                .filter((item) => item.name !== '')
+        );
     }
     return findMarkdown(absBase).map((source) => {
         const rel = path.relative(absBase, source).split(path.sep).join('/');
@@ -215,33 +251,32 @@ function listSource(rootDir: string, {kind, baseDir, outPrefix, exclude}: DocsSo
     });
 }
 
-// Rewrites intra-repo README.md links so they resolve inside the docs output.
-// Source links point at sibling source folders (../CopyToClipboard/README.md);
-// here every README maps to a flat <name>.md, so links are recomputed relative
-// to the current output file. Links to docs that aren't shipped (e.g. legacy/)
-// are unwrapped to plain text so no dead link remains. External URLs are kept.
-function rewriteReadmeLinks(
+// Rewrites repo-relative links so they resolve inside the docs output. A link to
+// another shipped doc — by README path (../Popup/README.md) or by its folder
+// (../Popup) — is recomputed relative to the current output file. Any other
+// repo-relative link (a source file, an unshipped doc like legacy/) is unwrapped
+// to plain text so no dead link remains. External URLs (http:, mailto:, …) and
+// in-page anchors are left untouched.
+function rewriteDocLinks(
     markdown: string,
     source: string,
     outRel: string,
     docMap: Map<string, string>,
 ): string {
     return markdown.replace(/\[([^\]]*)\]\(([^)]+)\)/g, (whole, text: string, target: string) => {
-        if (!/readme\.md/i.test(target)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) {
             return whole;
-        }
-        if (/^[a-z]+:\/\//i.test(target)) {
-            return whole; // external URL — leave as-is
         }
 
         const hashIndex = target.indexOf('#');
         const relPath = hashIndex === -1 ? target : target.slice(0, hashIndex);
         const anchor = hashIndex === -1 ? '' : target.slice(hashIndex);
 
+        // Resolve either a direct doc path or a bare folder to its shipped output.
         const absTarget = path.resolve(path.dirname(source), relPath);
         const targetOut = docMap.get(absTarget);
         if (!targetOut) {
-            return text; // target not shipped — drop the link, keep its text
+            return text; // not a shipped doc — drop the link, keep its text
         }
 
         let relOut = path.posix.relative(path.posix.dirname(outRel), targetOut);
@@ -264,7 +299,12 @@ function renderSection(title: string, entries: DocsIndexEntry[]): string {
     return `## ${title}\n\n${rows}\n`;
 }
 
-function renderIndex(packageName: string, outRelToRoot: string, sections: DocsSection[]): string {
+function renderIndex(
+    packageName: string,
+    outRelToRoot: string,
+    sections: DocsSection[],
+    overview: string,
+): string {
     // e.g. node_modules/@gravity-ui/uikit/build/docs
     const installedPath = path.posix.join('node_modules', packageName, outRelToRoot);
     const header = [
@@ -277,7 +317,52 @@ function renderIndex(packageName: string, outRelToRoot: string, sections: DocsSe
         '',
     ].join('\n');
 
-    return [header, ...sections.map(({title, entries}) => renderSection(title, entries))]
+    return [header, overview, ...sections.map(({title, entries}) => renderSection(title, entries))]
         .filter(Boolean)
         .join('\n');
+}
+
+// Parses the package README with readme-validator and renders its agent-facing
+// overview (positioning + When to use/not/pitfalls) plus the Install and Usage
+// sections, so they lead the generated INDEX. Each field is null when its source
+// section is absent, so a README that has adopted only part of the template
+// degrades section-by-section. Empty string when nothing is present — the INDEX
+// just omits the overview.
+function readPackageOverview(readmePath: string): string {
+    if (!fs.existsSync(readmePath)) {
+        return '';
+    }
+    const {agentPositioning, agentProse, install, usage} = parsePackageReadme(
+        fs.readFileSync(readmePath, 'utf8'),
+    );
+
+    const parts: string[] = [];
+    // agentProse already carries its own `###` subheadings (When to use, …).
+    if (agentPositioning || agentProse) {
+        parts.push(`## ${README_AI_SECTION}`);
+        if (agentPositioning) {
+            parts.push(agentPositioning);
+        }
+        if (agentProse) {
+            parts.push(agentProse);
+        }
+    }
+    if (install) {
+        parts.push(`## ${README_INSTALL_SECTION}`, install);
+    }
+    if (usage) {
+        parts.push(`## ${README_USAGE_SECTION}`, usage);
+    }
+    if (parts.length === 0) {
+        return '';
+    }
+    // Keep cleanMarkdown's trailing newline so the INDEX join leaves a blank line
+    // before the first doc section.
+    return cleanMarkdown(parts.join('\n\n'));
+}
+
+// Collapses internal whitespace so a multi-line description paragraph stays on a
+// single INDEX.md list line.
+function collapseWhitespace(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
 }
