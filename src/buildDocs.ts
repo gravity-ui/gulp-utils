@@ -162,7 +162,10 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
 
     const outRelToRoot = path.relative(rootDir, outDir).split(path.sep).join('/');
     const readmePath = path.join(rootDir, 'README.md');
-    const overview = readPackageOverview(readmePath);
+    // Rewrite the overview's links too: README prose (Useful docs, Usage, …)
+    // references docs by their repo path, but they were copied/flattened into
+    // outDir. INDEX.md sits at the outDir root, so outRel is empty.
+    const overview = rewriteDocLinks(readPackageOverview(readmePath), readmePath, '', docMap);
     writeDoc(
         path.join(outDir, 'INDEX.md'),
         renderIndex(packageName, outRelToRoot, sections, overview),

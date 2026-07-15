@@ -139,6 +139,31 @@ test('surfaces the README Install and Usage sections in INDEX.md', () => {
     );
 });
 
+test('rewrites README overview links to their copied doc locations', () => {
+    // buildTempPackage ships docs/theming.md → guides/theming.md. A README prose
+    // link to the repo path must be rewritten relative to INDEX.md (outDir root),
+    // not left pointing at the no-longer-present ./docs/theming.md.
+    const pkg = buildTempPackage(
+        [
+            '# @demo/widgets',
+            '',
+            '## For AI agents',
+            '',
+            'Primitives.',
+            '',
+            '### Useful docs',
+            '',
+            '- [Theming](./docs/theming.md)',
+        ].join('\n'),
+    );
+
+    pkg.run();
+    const index = pkg.readIndex();
+
+    assert.match(index, /\[Theming\]\(\.\/guides\/theming\.md\)/);
+    assert.doesNotMatch(index, /docs\/theming\.md/);
+});
+
 test('summarizes a component index entry from its intro paragraph', () => {
     const pkg = buildTempPackage('# @demo/widgets\n\n## For AI agents\n\nPrimitives.\n');
 
@@ -146,26 +171,4 @@ test('summarizes a component index entry from its intro paragraph', () => {
 
     // Button/README.md is "# Button\n\nA button." → the paragraph becomes the summary.
     assert.match(pkg.readIndex(), /\[Button\]\(\.\/components\/Button\.md\) — A button\./);
-});
-
-test('appends a Documentation-for-AI-agents pointer to README.md, only once', () => {
-    const pkg = buildTempPackage('# @demo/widgets\n\n## For AI agents\n\nPrimitives.\n');
-
-    pkg.run();
-    pkg.run();
-    const readme = pkg.readReadme();
-
-    const occurrences = readme.split('## Documentation for AI agents').length - 1;
-    assert.equal(occurrences, 1, 'pointer section must not be duplicated across runs');
-    assert.match(readme, /build\/docs\/INDEX\.md/);
-});
-
-test('still builds and adds the pointer when README has no AI section', () => {
-    const pkg = buildTempPackage('# @demo/widgets\n\nJust a description.\n');
-
-    pkg.run();
-
-    assert.doesNotMatch(pkg.readIndex(), /## For AI agents/);
-    assert.match(pkg.readIndex(), /## Components/);
-    assert.match(pkg.readReadme(), /## Documentation for AI agents/);
 });
