@@ -95,14 +95,57 @@ test('places the README "For AI agents" section at the top of INDEX.md', () => {
     pkg.run();
     const index = pkg.readIndex();
 
-    // The section, cleaned of the badge, leads the generated doc sections.
+    // The section, cleaned of the badge, leads the generated doc sections, with
+    // positioning and the When-to-use prose both surfaced.
     assert.match(index, /## For AI agents/);
     assert.match(index, /Widget primitives for dashboards\./);
+    assert.match(index, /### When to use/);
+    assert.match(index, /Building a grid\./);
     assert.doesNotMatch(index, /shields\.io/);
     assert.ok(
         index.indexOf('## For AI agents') < index.indexOf('## Components'),
         'AI section should appear before the doc sections',
     );
+});
+
+test('surfaces the README Install and Usage sections in INDEX.md', () => {
+    const pkg = buildTempPackage(
+        [
+            '# @demo/widgets',
+            '',
+            '## Installation',
+            '',
+            '```sh',
+            'npm install @demo/widgets',
+            '```',
+            '',
+            '## Usage',
+            '',
+            'Wrap your app in the provider.',
+        ].join('\n'),
+    );
+
+    pkg.run();
+    const index = pkg.readIndex();
+
+    // `## Installation` is normalized to the canonical `## Install` label.
+    assert.match(index, /## Install\b/);
+    assert.match(index, /npm install @demo\/widgets/);
+    assert.match(index, /## Usage/);
+    assert.match(index, /Wrap your app in the provider\./);
+    assert.ok(
+        index.indexOf('## Usage') < index.indexOf('## Components'),
+        'package sections should precede the doc sections',
+    );
+});
+
+test('summarizes a component index entry from its intro paragraph', () => {
+    const pkg = buildTempPackage('# @demo/widgets\n\n## For AI agents\n\nPrimitives.\n');
+
+    pkg.run();
+
+    // Button/README.md is "# Button\n\nA button." → the paragraph becomes the summary.
+    assert.match(pkg.readIndex(), /\[Button\]\(\.\/components\/Button\.md\) — A button\./);
 });
 
 test('appends a Documentation-for-AI-agents pointer to README.md, only once', () => {

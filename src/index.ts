@@ -9,4 +9,3 @@ export type {
     DocsIndexEntry,
     BuildDocsResult,
 } from './buildDocs.js';
-export {cleanMarkdown, extractSection, extractSummary, extractTitle} from './cleanMarkdown.js';

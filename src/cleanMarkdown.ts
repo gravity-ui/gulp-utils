@@ -37,51 +37,6 @@ export function cleanMarkdown(content: string): string {
 }
 
 /**
- * Extracts a one-line summary for the docs index: the first prose line after the
- * title, skipping the leading import/example code block. Returns an empty string
- * when a section heading follows the title directly (no intro paragraph).
- *
- * @param cleanedMarkdown markdown already processed by {@link cleanMarkdown}.
- * @param maxLength maximum summary length before it is truncated.
- * @returns the summary line, or an empty string.
- */
-export function extractSummary(cleanedMarkdown: string, maxLength = 300): string {
-    const lines = cleanedMarkdown.split('\n');
-
-    // Anchor on the title (first heading), then read what comes after it.
-    const titleIndex = lines.findIndex((line) => /^#{1,6}\s+/.test(line.trim()));
-    if (titleIndex === -1) {
-        return '';
-    }
-
-    for (let i = titleIndex + 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-
-        if (!line) {
-            continue;
-        }
-        // Skip the leading import/example code block.
-        if (line.startsWith('```')) {
-            i++;
-            while (i < lines.length && !lines[i].trim().startsWith('```')) {
-                i++;
-            }
-            continue;
-        }
-        // A heading right after the title means there is no intro paragraph.
-        if (line.startsWith('#')) {
-            return '';
-        }
-
-        // Unwrap links to plain text — the index line has its own base path.
-        const plain = line.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '');
-        return truncate(plain, maxLength);
-    }
-
-    return '';
-}
-
-/**
  * Extracts a heading and its body from markdown by heading text, matched
  * case-insensitively and ignoring emphasis/code markers. The returned block runs
  * from the matched heading up to the next heading of the same or higher level.
@@ -142,32 +97,4 @@ export function extractSection(markdown: string, headingText: string): string {
     }
 
     return lines.slice(start, end).join('\n').trim();
-}
-
-/**
- * Extracts the document title.
- *
- * @param cleanedMarkdown markdown already processed by {@link cleanMarkdown}.
- * @returns the text of the first heading, or an empty string if there is none.
- */
-export function extractTitle(cleanedMarkdown: string): string {
-    for (const line of cleanedMarkdown.split('\n')) {
-        const match = line.trim().match(/^#{1,6}\s+(.+)$/);
-        if (match) {
-            return match[1].replace(/[*_`]/g, '').trim();
-        }
-    }
-    return '';
-}
-
-function truncate(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-        return text;
-    }
-    const sentenceEnd = text.slice(0, maxLength).lastIndexOf('. ');
-    if (sentenceEnd > 40) {
-        return text.slice(0, sentenceEnd + 1);
-    }
-    const wordEnd = text.slice(0, maxLength).lastIndexOf(' ');
-    return `${text.slice(0, wordEnd > 40 ? wordEnd : maxLength).trim()}…`;
 }

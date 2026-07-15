@@ -1,13 +1,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import {cleanMarkdown, extractSection, extractSummary, extractTitle} from './cleanMarkdown.js';
+import {parseComponentReadme, parsePackageReadme} from '@gravity-ui/readme-validator';
+
+import {cleanMarkdown, extractSection} from './cleanMarkdown.js';
 
 // Story/test folders hold Storybook doc pages and fixtures, not API docs.
 const DEFAULT_EXCLUDE = ['__stories__', '__tests__', '__mocks__', '__snapshots__'];
 
-// Heading in the package README whose content is surfaced at the top of INDEX.md.
+// Headings under which the package README's parsed sections are surfaced at the
+// top of INDEX.md (canonical labels; readme-validator matches heading aliases).
 const README_AI_SECTION = 'For AI agents';
+const README_INSTALL_SECTION = 'Install';
+const README_USAGE_SECTION = 'Usage';
 // Heading of the pointer section buildDocs keeps in the package README.
 const README_DOCS_POINTER = 'Documentation for AI agents';
 
@@ -142,17 +147,16 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
     for (const {source, items} of listed) {
         const entries: DocsIndexEntry[] = [];
         for (const {source: file, name, outRel} of items) {
-            const cleaned = rewriteDocLinks(
-                cleanMarkdown(fs.readFileSync(file, 'utf8')),
-                file,
-                outRel,
-                docMap,
-            );
+            // Title/summary come from readme-validator's AST parse of the source;
+            // the shipped doc body is the same source run through cleanMarkdown.
+            const raw = fs.readFileSync(file, 'utf8');
+            const parsed = parseComponentReadme(raw);
+            const cleaned = rewriteDocLinks(cleanMarkdown(raw), file, outRel, docMap);
             writeDoc(path.join(outDir, outRel), cleaned);
             entries.push({
-                name: source.nameFromTitle ? extractTitle(cleaned) || name : name,
+                name: source.nameFromTitle ? parsed.title || name : name,
                 rel: outRel,
-                summary: extractSummary(cleaned),
+                summary: collapseWhitespace(parsed.description ?? ''),
             });
         }
         sections.push({title: source.title, entries});
@@ -160,10 +164,10 @@ export function buildDocs(config: DocsConfig = createDefaultDocsConfig()): Build
 
     const outRelToRoot = path.relative(rootDir, outDir).split(path.sep).join('/');
     const readmePath = path.join(rootDir, 'README.md');
-    const aiSection = readAiSection(readmePath);
+    const overview = readPackageOverview(readmePath);
     writeDoc(
         path.join(outDir, 'INDEX.md'),
-        renderIndex(packageName, outRelToRoot, sections, aiSection),
+        renderIndex(packageName, outRelToRoot, sections, overview),
     );
     ensureReadmePointer(readmePath, path.posix.join(outRelToRoot, 'INDEX.md'));
 
@@ -299,7 +303,7 @@ function renderIndex(
     packageName: string,
     outRelToRoot: string,
     sections: DocsSection[],
-    aiSection: string,
+    overview: string,
 ): string {
     // e.g. node_modules/@gravity-ui/uikit/build/docs
     const installedPath = path.posix.join('node_modules', packageName, outRelToRoot);
@@ -313,26 +317,59 @@ function renderIndex(
         '',
     ].join('\n');
 
-    return [header, aiSection, ...sections.map(({title, entries}) => renderSection(title, entries))]
+    return [header, overview, ...sections.map(({title, entries}) => renderSection(title, entries))]
         .filter(Boolean)
         .join('\n');
 }
 
-// Reads and cleans the README's "For AI agents" section so it can lead the INDEX.
-// Empty string when the README (or the section) is absent — the INDEX just omits it.
-function readAiSection(readmePath: string): string {
+// Parses the package README with readme-validator and renders its agent-facing
+// overview (positioning + When to use/not/pitfalls) plus the Install and Usage
+// sections, so they lead the generated INDEX. Each field is null when its source
+// section is absent, so a README that has adopted only part of the template
+// degrades section-by-section. Empty string when nothing is present — the INDEX
+// just omits the overview.
+function readPackageOverview(readmePath: string): string {
     if (!fs.existsSync(readmePath)) {
         return '';
     }
-    const section = extractSection(fs.readFileSync(readmePath, 'utf8'), README_AI_SECTION);
+    const {agentPositioning, agentProse, install, usage} = parsePackageReadme(
+        fs.readFileSync(readmePath, 'utf8'),
+    );
+
+    const parts: string[] = [];
+    // agentProse already carries its own `###` subheadings (When to use, …).
+    if (agentPositioning || agentProse) {
+        parts.push(`## ${README_AI_SECTION}`);
+        if (agentPositioning) {
+            parts.push(agentPositioning);
+        }
+        if (agentProse) {
+            parts.push(agentProse);
+        }
+    }
+    if (install) {
+        parts.push(`## ${README_INSTALL_SECTION}`, install);
+    }
+    if (usage) {
+        parts.push(`## ${README_USAGE_SECTION}`, usage);
+    }
+    if (parts.length === 0) {
+        return '';
+    }
     // Keep cleanMarkdown's trailing newline so the INDEX join leaves a blank line
     // before the first doc section.
-    return section ? cleanMarkdown(section) : '';
+    return cleanMarkdown(parts.join('\n\n'));
+}
+
+// Collapses internal whitespace so a multi-line description paragraph stays on a
+// single INDEX.md list line.
+function collapseWhitespace(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
 }
 
 // Appends a pointer section to the package README so a human (or agent) browsing
 // the repo finds the generated docs tree. Idempotent: re-running buildDocs never
-// duplicates it, and the distinct heading keeps it out of {@link readAiSection}.
+// duplicates it, and the distinct heading keeps it out of {@link readPackageOverview}.
 function ensureReadmePointer(readmePath: string, indexRel: string): void {
     if (!fs.existsSync(readmePath)) {
         return;

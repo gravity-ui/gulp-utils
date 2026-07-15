@@ -39,7 +39,11 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20.19"
+  },
   "dependencies": {
+    "@gravity-ui/readme-validator": "^1.2.1",
     "plugin-error": "^2.0.1",
     "through2": "^4.0.2",
     "to-through": "^3.0.0",
