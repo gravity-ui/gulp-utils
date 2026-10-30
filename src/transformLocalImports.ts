@@ -10,7 +10,9 @@ export function transformLocalModulesFactory(ts: typeof Typescript) {
         const options = context.getCompilerOptions();
         return ts.visitNode(sourceFile, visitor);
 
-        function visitor<T extends Typescript.Node>(node: T): T {
+        function visitor<T extends Typescript.Node>(inputNode: T): T {
+            const node = ts.visitEachChild(inputNode, visitor, context);
+
             let modulePath;
             if (
                 (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -65,7 +67,7 @@ export function transformLocalModulesFactory(ts: typeof Typescript) {
                 }
                 return node;
             }
-            return ts.visitEachChild(node, visitor, context);
+            return node;
         }
     }
 
