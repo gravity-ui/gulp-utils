@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/gravity-ui/gulp-utils/compare/v1.1.1...v1.2.0) (2026-11-02)
+
+
+### Features
+
+* move buildDocs and cleanMarkdown to readme-validator ([#18](https://github.com/gravity-ui/gulp-utils/issues/18)) ([fff8a6a](https://github.com/gravity-ui/gulp-utils/commit/fff8a6a78f3eb7a2325be6120b433dfba4f8a5f4))
+
+
+### Bug Fixes
+
+* transform nested import types ([#20](https://github.com/gravity-ui/gulp-utils/issues/20)) ([2d81e29](https://github.com/gravity-ui/gulp-utils/commit/2d81e291c48b49a9cc384c6771d1fad6e3f206ad))
+
 ## [1.1.1](https://github.com/gravity-ui/gulp-utils/compare/v1.1.0...v1.1.1) (2026-07-15)
 
 
