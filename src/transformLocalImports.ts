@@ -48,13 +48,18 @@ export function transformLocalModulesFactory(ts: typeof Typescript) {
                         return newNode as unknown as T;
                     }
                     if (isDynamicImport(ts, node) || isRequire(ts, node)) {
+                        if (resolvedPath === modulePath) {
+                            return node;
+                        }
+                        const newPath = ts.setTextRange(
+                            context.factory.createStringLiteral(resolvedPath),
+                            node.arguments[0],
+                        );
                         const newStatement = context.factory.updateCallExpression(
                             node,
                             node.expression,
                             node.typeArguments,
-                            context.factory.createNodeArray([
-                                context.factory.createStringLiteral(resolvedPath),
-                            ]),
+                            [newPath, ...node.arguments.slice(1)],
                         );
                         ts.setSourceMapRange(newStatement, ts.getSourceMapRange(node));
                         return newStatement as unknown as T;
