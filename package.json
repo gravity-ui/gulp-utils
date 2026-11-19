@@ -29,7 +29,7 @@
     "prettier": "prettier '**/*.{md,yaml,yml,json}'",
     "typecheck": "tsc --noEmit",
     "build": "tshy",
-    "test": "node --import tsx --test test/*.test.ts || true",
+    "test": "node --import tsx --test test/*.test.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
