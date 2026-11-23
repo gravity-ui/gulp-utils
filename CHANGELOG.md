@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/gravity-ui/gulp-utils/compare/v1.2.0...v1.2.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* preserve comments in local dynamic imports ([#21](https://github.com/gravity-ui/gulp-utils/issues/21)) ([f708e60](https://github.com/gravity-ui/gulp-utils/commit/f708e6044e3de96a6e4b81de9a604ff2df5b2697))
+
 ## [1.2.0](https://github.com/gravity-ui/gulp-utils/compare/v1.1.1...v1.2.0) (2026-11-02)
 
 
